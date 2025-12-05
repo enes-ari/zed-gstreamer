@@ -444,7 +444,7 @@ static GType gst_zedsrc_stream_type_get_type(void) {
             {GST_ZEDSRC_ONLY_LEFT, "8 bits- 4 channels Left image", "Left image [BGRA]"},
             {GST_ZEDSRC_ONLY_RIGHT, "8 bits- 4 channels Right image", "Right image [BGRA]"},
             {GST_ZEDSRC_LEFT_RIGHT, "8 bits- 4 channels bit Left and Right",
-             "Stereo couple up/down [BGRA]"},
+             "Stereo couple left/right [BGRA]"},
             {GST_ZEDSRC_DEPTH_16, "16 bits depth", "Depth image [GRAY16_LE]"},
             {GST_ZEDSRC_LEFT_DEPTH, "8 bits- 4 channels Left and Depth(image)",
              "Left and Depth up/down [BGRA]"},
@@ -672,38 +672,38 @@ static GstStaticPadTemplate gst_zedsrc_src_template =
     GST_STATIC_PAD_TEMPLATE("src", GST_PAD_SRC, GST_PAD_ALWAYS,
                             GST_STATIC_CAPS(("video/x-raw, "   // Double stream VGA
                                              "format = (string)BGRA, "
-                                             "width = (int)672, "
-                                             "height = (int)752 , "
+                                             "width = (int)1344, "
+                                             "height = (int)376 , "
                                              "framerate = (fraction) { 15, 30, 60, 100 }"
                                              ";"
                                              "video/x-raw, "   // Double stream HD720
                                              "format = (string)BGRA, "
-                                             "width = (int)1280, "
-                                             "height = (int)1440, "
+                                             "width = (int)2560, "
+                                             "height = (int)720, "
                                              "framerate = (fraction) { 15, 30, 60 }"
                                              ";"
                                              "video/x-raw, "   // Double stream HD1080
                                              "format = (string)BGRA, "
-                                             "width = (int)1920, "
-                                             "height = (int)2160, "
+                                             "width = (int)3840, "
+                                             "height = (int)1080, "
                                              "framerate = (fraction) { 15, 30, 60 }"
                                              ";"
                                              "video/x-raw, "   // Double stream HD2K
                                              "format = (string)BGRA, "
-                                             "width = (int)2208, "
-                                             "height = (int)2484, "
+                                             "width = (int)4416, "
+                                             "height = (int)1242, "
                                              "framerate = (fraction)15"
                                              ";"
                                              "video/x-raw, "   // Double stream HD1200 (GMSL2)
                                              "format = (string)BGRA, "
-                                             "width = (int)1920, "
-                                             "height = (int)2400, "
+                                             "width = (int)3840, "
+                                             "height = (int)1200, "
                                              "framerate = (fraction) { 15, 30, 60 }"
                                              ";"
                                              "video/x-raw, "   // Double stream SVGA (GMSL2)
                                              "format = (string)BGRA, "
-                                             "width = (int)960, "
-                                             "height = (int)1200, "
+                                             "width = (int)1920, "
+                                             "height = (int)600, "
                                              "framerate = (fraction) { 15, 30, 60, 120 }"
                                              ";"
                                              "video/x-raw, "   // Color VGA
@@ -858,10 +858,10 @@ static void gst_zedsrc_class_init(GstZedSrcClass *klass) {
         g_param_spec_string("svo-file-path", "SVO file", "Input from SVO file",
                             DEFAULT_PROP_SVO_FILE,
                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-    
+
     g_object_class_install_property(
         gobject_class, PROP_OPENCV_CALIB_FILE,
-        g_param_spec_string("opencv-calibration-file", "Optional OpenCV Calibration File", "Optional OpenCV Calibration File", 
+        g_param_spec_string("opencv-calibration-file", "Optional OpenCV Calibration File", "Optional OpenCV Calibration File",
                             DEFAULT_PROP_OPENCV_CALIB_FILE,
                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 
@@ -2179,8 +2179,8 @@ static gboolean gst_zedsrc_calculate_caps(GstZedSrc *src) {
     width = cam_info.camera_configuration.resolution.width;
     height = cam_info.camera_configuration.resolution.height;
 
-    if (src->stream_type == GST_ZEDSRC_LEFT_RIGHT || src->stream_type == GST_ZEDSRC_LEFT_DEPTH) {
-        height *= 2;
+     if (src->stream_type == GST_ZEDSRC_LEFT_RIGHT || src->stream_type == GST_ZEDSRC_LEFT_DEPTH) {
+        width *= 2; // Double the width for Side-by-Side
     }
 
     fps = static_cast<gint>(cam_info.camera_configuration.fps);
@@ -2206,7 +2206,7 @@ static gboolean gst_zedsrc_calculate_caps(GstZedSrc *src) {
 
 static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
 #if (ZED_SDK_MAJOR_VERSION != 5)
-    GST_ELEMENT_ERROR(src, LIBRARY, FAILED, 
+    GST_ELEMENT_ERROR(src, LIBRARY, FAILED,
     ("Wrong ZED SDK version. SDK v5.0 EA or newer required "),
                       (NULL));
 #endif
@@ -2305,7 +2305,7 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
     init_params.camera_disable_self_calib = src->camera_disable_self_calib == TRUE;
     GST_INFO(" * Disable self calibration: %s",
              (init_params.camera_disable_self_calib ? "TRUE" : "FALSE"));
-    
+
     sl::String opencv_calibration_file(src->opencv_calibration_file.str);
     init_params.optional_opencv_calibration_file = opencv_calibration_file;
     GST_INFO(" * Calibration File: %s ", init_params.optional_opencv_calibration_file.c_str());
@@ -2387,7 +2387,7 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
 
             src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC_ROI, roi, side);
         }
-        
+
         src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AUTO_EXPOSURE_TIME_RANGE, src->exposureRange_min, src->exposureRange_max);
         GST_INFO(" * AUTO EXPOSURE TIME RANGE: [%d,%d]", src->exposureRange_min, src->exposureRange_max);
     }
@@ -2427,9 +2427,9 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
     GST_INFO(" * Fill Mode: %s", (src->fill_mode ? "TRUE" : "FALSE"));
 
     if (src->roi) {
-        if (src->roi_x != -1 && 
-                src->roi_y != -1 && 
-                src->roi_w != -1 && 
+        if (src->roi_x != -1 &&
+                src->roi_y != -1 &&
+                src->roi_w != -1 &&
                 src->roi_h != -1) {
             int roi_x_end = src->roi_x + src->roi_w;
             int roi_y_end = src->roi_y + src->roi_h;
@@ -2443,7 +2443,7 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
                 for (unsigned int v = src->roi_y; v < roi_y_end; v++)
                   for (unsigned int u = src->roi_x; u < roi_x_end; u++)
                         roi_mask.setValue<sl::uchar1>(u, v, 255, sl::MEM::CPU);
-                
+
                 GST_INFO(" * ROI mask: (%d,%d)-%dx%d",
                         src->roi_x, src->roi_y, src->roi_w, src->roi_h);
 
@@ -2452,7 +2452,7 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
                     GST_ELEMENT_ERROR (src, RESOURCE, NOT_FOUND,
                                     ("Failed to set region of interest, '%s'", sl::toString(ret).c_str() ), (NULL));
                     return FALSE;
-                } 
+                }
             }
         }
     }
@@ -2757,7 +2757,7 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
                 src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC, src->aec_agc);
                 src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC_ROI, roi, side);
                 src->exposure_gain_updated = FALSE;
-            }       
+            }
         }
     }
     // <---- Set runtime parameters
@@ -2823,9 +2823,7 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
         ret = src->zed.retrieveImage(left_img, sl::VIEW::RIGHT, sl::MEM::CPU);
         if(!check_ret(ret)) return GST_FLOW_ERROR;
     } else if (src->stream_type == GST_ZEDSRC_LEFT_RIGHT) {
-        ret = src->zed.retrieveImage(left_img, sl::VIEW::LEFT, sl::MEM::CPU);
-        if(!check_ret(ret)) return GST_FLOW_ERROR;
-        ret = src->zed.retrieveImage(right_img, sl::VIEW::RIGHT, sl::MEM::CPU);
+        ret = src->zed.retrieveImage(left_img, sl::VIEW::SIDE_BY_SIDE, sl::MEM::CPU);
         if(!check_ret(ret)) return GST_FLOW_ERROR;
     } else if (src->stream_type == GST_ZEDSRC_DEPTH_16) {
         ret = src->zed.retrieveMeasure(depth_data, sl::MEASURE::DEPTH_U16_MM, sl::MEM::CPU);
@@ -2842,25 +2840,34 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     if (src->stream_type == GST_ZEDSRC_DEPTH_16) {
         memcpy(minfo.data, depth_data.getPtr<sl::ushort1>(), minfo.size);
     } else if (src->stream_type == GST_ZEDSRC_LEFT_RIGHT) {
-        // Left RGB data on half top
-        memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size / 2);
-
-        // Right RGB data on half bottom
-        memcpy((minfo.data + minfo.size / 2), right_img.getPtr<sl::uchar4>(), minfo.size / 2);
+        // Side-by-Side RGB data
+        memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
     } else if (src->stream_type == GST_ZEDSRC_LEFT_DEPTH) {
-        // RGB data on half top
-        memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size / 2);
+         // Manual Side-by-Side: Left RGB + Depth (Float->UInt32)
 
-        // Depth data on half bottom
-        uint32_t *gst_data = (uint32_t *) (minfo.data + minfo.size / 2);
+        int h = left_img.getHeight();
+        int w = left_img.getWidth();
+        int row_bytes = w * 4; // 4 bytes per pixel (BGRA)
 
-        sl::float1 *depthDataPtr = depth_data.getPtr<sl::float1>();
+        guint8* dst = (guint8*)minfo.data;
+        guint8* src_left = (guint8*)left_img.getPtr<sl::uchar4>();
+        sl::float1* src_depth = depth_data.getPtr<sl::float1>(); // Depth is float (4 bytes)
 
-        for (unsigned long i = 0; i < minfo.size / 8; i++) {
-            *(gst_data++) = static_cast<uint32_t>(*(depthDataPtr++));
+        for (int i = 0; i < h; i++) {
+            // 1. Copy one row of Left Image
+            memcpy(dst, src_left, row_bytes);
+            dst += row_bytes;       // Advance dst by one row
+            src_left += row_bytes;  // Advance src_left by one row
 
-            // printf( "#%lu: %u / %g %u \n", i, *(gst_data-1), *(depthDataPtr-1),
-            // static_cast<uint32_t>(*(depthDataPtr-1)));
+            // 2. Copy one row of Depth Data (converting float to uint32 representation)
+            // We cast dst to uint32_t* to write 4-byte chunks easily
+            uint32_t* dst_depth = (uint32_t*)dst;
+            for (int j = 0; j < w; j++) {
+                // Copy the raw float bits into the uint32 buffer (or cast value if intent is visual)
+                // Original code used static_cast<uint32_t>(float_val), which truncates millimeters to integer
+                *dst_depth++ = static_cast<uint32_t>(*src_depth++);
+            }
+            dst += row_bytes; // Advance dst by the size of the depth row we just wrote
         }
     } else {
         memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
