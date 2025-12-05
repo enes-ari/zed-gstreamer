@@ -1686,32 +1686,8 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     if (src->stream_type == GST_ZEDSRC_DEPTH_16) {
         memcpy(minfo.data, depth_data.getPtr<sl::ushort1>(), minfo.size);
     } else if (src->stream_type == GST_ZEDSRC_LEFT_DEPTH) {
-         // Manual Side-by-Side: Left RGB + Depth (Float->UInt32)
-
-        int h = left_img.getHeight();
-        int w = left_img.getWidth();
-        int row_bytes = w * 4; // 4 bytes per pixel (BGRA)
-
-        guint8* dst = (guint8*)minfo.data;
-        guint8* src_left = (guint8*)left_img.getPtr<sl::uchar4>();
-        sl::float1* src_depth = depth_data.getPtr<sl::float1>(); // Depth is float (4 bytes)
-
-        for (int i = 0; i < h; i++) {
-            // 1. Copy one row of Left Image
-            memcpy(dst, src_left, row_bytes);
-            dst += row_bytes;       // Advance dst by one row
-            src_left += row_bytes;  // Advance src_left by one row
-
-            // 2. Copy one row of Depth Data (converting float to uint32 representation)
-            // We cast dst to uint32_t* to write 4-byte chunks easily
-            uint32_t* dst_depth = (uint32_t*)dst;
-            for (int j = 0; j < w; j++) {
-                // Copy the raw float bits into the uint32 buffer (or cast value if intent is visual)
-                // Original code used static_cast<uint32_t>(float_val), which truncates millimeters to integer
-                *dst_depth++ = static_cast<uint32_t>(*src_depth++);
-            }
-            dst += row_bytes; // Advance dst by the size of the depth row we just wrote
-        }
+        // TODO: Implement left depth copy
+        return GST_FLOW_ERROR;
     } else {
         memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
     }
