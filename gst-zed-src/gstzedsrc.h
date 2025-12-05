@@ -76,47 +76,6 @@ struct _GstZedSrc {
     gint measure3D_reference_frame;
     gboolean fill_mode;
 
-    gboolean pos_tracking;
-    gboolean camera_static;
-    GString area_file_path;
-    gboolean enable_area_memory;
-    gboolean enable_imu_fusion;
-    gboolean enable_pose_smoothing;
-    gboolean set_floor_as_origin;
-    gboolean set_gravity_as_origin;
-    gfloat depth_min_range;
-    gfloat init_pose_x;
-    gfloat init_pose_y;
-    gfloat init_pose_z;
-    gfloat init_orient_roll;
-    gfloat init_orient_pitch;
-    gfloat init_orient_yaw;
-    gint pos_trk_mode;
-
-    gboolean object_detection;
-    gboolean od_enable_tracking;                     // bool enable_tracking
-    gboolean od_enable_segm_output;                  // bool enable_segmentation TODO
-    gint od_detection_model;                         // sl::OBJECT_DETECTION_MODEL detection_model
-    gfloat od_max_range;                             // float max_range
-    gint od_filter_mode;                             // sl::OBJECT_FILTERING_MODE filtering_mode
-    gfloat od_prediction_timeout_s;                  // float prediction_timeout_s
-    gboolean od_allow_reduced_precision_inference;   // bool allow_reduced_precision_inference
-    gfloat od_det_conf;               // [runtime] float detection_confidence_threshold
-    gfloat od_person_conf;            // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_vehicle_conf;           // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_bag_conf;               // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_animal_conf;            // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_electronics_conf;       // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_fruit_vegetable_conf;   // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-    gfloat od_sport_conf;             // [runtime] std::map< OBJECT_CLASS, float >
-                                      // object_class_detection_confidence_threshold
-
     gboolean body_tracking;
     gboolean bt_enable_segm_output;   // bool enable_segmentation
     gint bt_model;                    // sl::BODY_TRACKING_MODEL detection_model
