@@ -25,7 +25,6 @@
 #include <math.h>
 #include <unistd.h>
 
-#include "gst-zed-meta/gstzedmeta.h"
 #include "gstzedxonesrc.h"
 
 #include <chrono>
@@ -309,7 +308,7 @@ static void gst_zedxonesrc_class_init(GstZedXOneSrcClass *klass) {
 
     g_object_class_install_property(
         gobject_class, PROP_OPENCV_CALIB_FILE,
-        g_param_spec_string("opencv-calibration-file", "Optional OpenCV Calibration File", "Optional OpenCV Calibration File", 
+        g_param_spec_string("opencv-calibration-file", "Optional OpenCV Calibration File", "Optional OpenCV Calibration File",
                             DEFAULT_PROP_OPENCV_CALIB_FILE,
                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 
@@ -324,30 +323,30 @@ static void gst_zedxonesrc_class_init(GstZedXOneSrcClass *klass) {
         g_param_spec_boolean("enable-hdr", "HDR status",
                              "Enable HDR if supported by resolution and frame rate.", DEFAULT_PROP_ENABLE_HDR,
                              (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-   
+
     g_object_class_install_property(
         gobject_class, PROP_SATURATION,
         g_param_spec_int("ctrl-saturation", "Camera control: saturation", "Image saturation", 0, 8,
                          DEFAULT_PROP_SATURATION,
                          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-    
+
     g_object_class_install_property(
         gobject_class, PROP_SHARPNESS,
         g_param_spec_int("ctrl-sharpness", "Camera control: sharpness", "Image sharpness", 0, 8,
                          DEFAULT_PROP_SHARPNESS,
                          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-    
+
     g_object_class_install_property(
         gobject_class, PROP_GAMMA,
         g_param_spec_int("ctrl-gamma", "Camera control: gamma", "Image gamma", 1, 9, DEFAULT_PROP_GAMMA,
                          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-    
+
     g_object_class_install_property(
         gobject_class, PROP_AUTO_WB,
         g_param_spec_boolean("ctrl-whitebalance-auto", "Camera control: automatic whitebalance",
                              "Image automatic white balance", DEFAULT_PROP_AUTO_WB,
                              (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-    
+
     g_object_class_install_property(
         gobject_class, PROP_WB_TEMP,
         g_param_spec_int("ctrl-whitebalance-temperature", "Camera control: white balance temperature",
@@ -491,7 +490,7 @@ static void gst_zedxonesrc_init(GstZedXOneSrc *src) {
     src->_opencvCalibrationFile = *g_string_new(DEFAULT_PROP_OPENCV_CALIB_FILE);
     src->_cameraImageFlip = DEFAULT_PROP_CAM_FLIP;
     src->_enableHDR = DEFAULT_PROP_ENABLE_HDR;
-    
+
     src->_saturation = DEFAULT_PROP_SATURATION;
     src->_sharpness = DEFAULT_PROP_SHARPNESS;
     src->_gamma = DEFAULT_PROP_GAMMA;
@@ -545,7 +544,7 @@ void gst_zedxonesrc_set_property(GObject *object, guint property_id, const GValu
         break;
     case PROP_VERBOSE_LVL:
         src->_sdkVerboseLevel = g_value_get_int(value);
-        break;    
+        break;
     case PROP_TIMEOUT_SEC:
         src->_camTimeout_sec = g_value_get_float(value);
         break;
@@ -579,7 +578,7 @@ void gst_zedxonesrc_set_property(GObject *object, guint property_id, const GValu
         break;
     case PROP_WB_TEMP:
         src->_manualWb = g_value_get_int(value);
-        break;    
+        break;
     case PROP_AUTO_EXPOSURE:
         src->_autoExposure = g_value_get_boolean(value);
         break;
@@ -618,7 +617,7 @@ void gst_zedxonesrc_set_property(GObject *object, guint property_id, const GValu
         break;
     case PROP_DIGITAL_GAIN_RANGE_MAX:
         src->_digitalGainRange_max = g_value_get_int(value);
-        break;    
+        break;
     case PROP_DENOISING:
         src->_denoising = g_value_get_int(value);
         break;
@@ -679,7 +678,7 @@ void gst_zedxonesrc_get_property(GObject *object, guint property_id, GValue *val
         break;
     case PROP_WB_TEMP:
         g_value_set_int(value, src->_manualWb);
-        break; 
+        break;
     case PROP_AUTO_EXPOSURE:
         g_value_set_boolean(value, src->_autoExposure);
         break;
@@ -718,7 +717,7 @@ void gst_zedxonesrc_get_property(GObject *object, guint property_id, GValue *val
         break;
     case PROP_DIGITAL_GAIN_RANGE_MAX:
         g_value_set_int(value, src->_digitalGainRange_max);
-        break;    
+        break;
     case PROP_DENOISING:
         g_value_set_int(value, src->_denoising);
         break;
@@ -793,7 +792,7 @@ static gboolean gst_zedxonesrc_calculate_caps(GstZedXOneSrc *src) {
 
 static gboolean gst_zedxonesrc_start(GstBaseSrc *bsrc) {
 #if (ZED_SDK_MAJOR_VERSION != 5)
-    GST_ELEMENT_ERROR(src, LIBRARY, FAILED, 
+    GST_ELEMENT_ERROR(src, LIBRARY, FAILED,
     ("Wrong ZED SDK version. SDK v5.0 EA or newer required "),
                       (NULL));
 #endif
@@ -840,7 +839,7 @@ static gboolean gst_zedxonesrc_start(GstBaseSrc *bsrc) {
                               ("Failed to set camera resolution"), (NULL));
             return FALSE;
     }
-    
+
     GST_INFO(" * Camera resolution: %s", sl::toString(init_params.camera_resolution).c_str());
     init_params.camera_fps = src->_cameraFps;
     GST_INFO(" * Camera FPS: %d", init_params.camera_fps);
@@ -1011,7 +1010,7 @@ static gboolean gst_zedxonesrc_start(GstBaseSrc *bsrc) {
     if (!check_ret(ret))
         return FALSE;
     GST_INFO(" * Auto Analog Gain range: [%d,%d]", src->_analogGainRange_min, src->_analogGainRange_max);
-    
+
     if (src->_autoDigitalGain) {
         GST_INFO(" * Auto Digital Gain: TRUE");
     } else {
@@ -1201,7 +1200,7 @@ static GstFlowReturn gst_zedxonesrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     // ----> Sensors metadata
     GST_TRACE("Sensors metadata");
     ZedSensors sens;
-    
+
     sens.sens_avail = TRUE;
     sl::SensorsData sens_data;
     src->_zed->getSensorsData(sens_data, sl::TIME_REFERENCE::IMAGE);
@@ -1224,7 +1223,7 @@ static GstFlowReturn gst_zedxonesrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     sl::SensorsData::TemperatureData::SENSOR_LOCATION::IMU, temp);
     sens.temp.temp_cam_left = temp;
     sens.temp.temp_cam_right = temp;
-    
+
     sens.mag.mag_avail = FALSE;
     sens.env.env_avail = FALSE;
     // <---- Sensors metadata metadata

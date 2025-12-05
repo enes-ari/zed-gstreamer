@@ -23,7 +23,7 @@ endif()
 set(SOURCES
     gstzedsrc.cpp
     )
-    
+
 set(HEADERS
     gstzedsrc.h
     )
@@ -72,7 +72,6 @@ if (WIN32)
         ${GSTREAMER_LIBRARY}
         ${GSTREAMER_BASE_LIBRARY}
         ${GSTREAMER_VIDEO_LIBRARY}
-        gstzedmeta
         ${ZED_LIBS}
         )
 else()
@@ -83,7 +82,6 @@ else()
         ${GSTREAMER_BASE_LIBRARY}
         ${GSTREAMER_VIDEO_LIBRARY}
         ${ZED_LIBS}
-        ${CMAKE_CURRENT_BINARY_DIR}/../gst-zed-meta/libgstzedmeta.so
         )
 endif()
 

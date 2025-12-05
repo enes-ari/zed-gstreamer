@@ -33,7 +33,7 @@ set(libname gstzedxonesrc)
 set(SOURCES
   gstzedxonesrc.cpp
 )
-  
+
 set(HEADERS
   gstzedxonesrc.h
 )
@@ -70,7 +70,6 @@ target_link_libraries (
   ${GSTREAMER_BASE_LIBRARY}
   ${GSTREAMER_VIDEO_LIBRARY}
   ${ZED_LIBS}
-  ${CMAKE_CURRENT_BINARY_DIR}/../gst-zed-meta/libgstzedmeta.so
 )
 
 install(TARGETS ${libname} LIBRARY DESTINATION ${PLUGIN_INSTALL_DIR})
