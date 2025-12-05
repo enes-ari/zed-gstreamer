@@ -2717,50 +2717,50 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     }
 
     // ----> Set runtime parameters
-    sl::RuntimeParameters zedRtParams;   // runtime parameters
+    // sl::RuntimeParameters zedRtParams;   // runtime parameters
 
-    GST_TRACE_OBJECT(src, "CAMERA RUNTIME PARAMETERS");
-    if (src->depth_mode == static_cast<gint>(sl::DEPTH_MODE::NONE) && !src->pos_tracking) {
-        zedRtParams.enable_depth = false;
-    } else {
-        zedRtParams.enable_depth = true;
-    }
-    zedRtParams.confidence_threshold = src->confidence_threshold;
-    zedRtParams.texture_confidence_threshold = src->texture_confidence_threshold;
-    zedRtParams.measure3D_reference_frame =
-        static_cast<sl::REFERENCE_FRAME>(src->measure3D_reference_frame);
-    zedRtParams.enable_fill_mode = src->fill_mode;
-    zedRtParams.remove_saturated_areas = true;
+    // GST_TRACE_OBJECT(src, "CAMERA RUNTIME PARAMETERS");
+    // if (src->depth_mode == static_cast<gint>(sl::DEPTH_MODE::NONE) && !src->pos_tracking) {
+    //     zedRtParams.enable_depth = false;
+    // } else {
+    //     zedRtParams.enable_depth = true;
+    // }
+    // zedRtParams.confidence_threshold = src->confidence_threshold;
+    // zedRtParams.texture_confidence_threshold = src->texture_confidence_threshold;
+    // zedRtParams.measure3D_reference_frame =
+    //     static_cast<sl::REFERENCE_FRAME>(src->measure3D_reference_frame);
+    // zedRtParams.enable_fill_mode = src->fill_mode;
+    // zedRtParams.remove_saturated_areas = true;
 
     // Runtime exposure control
-    if (src->exposure_gain_updated) {
-        GST_INFO("Exposure gain updated");
-        if (src->aec_agc == FALSE) {
-            // Manual exposure control
-            src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC, src->aec_agc);
-            src->zed.setCameraSettings(sl::VIDEO_SETTINGS::EXPOSURE, src->exposure);
-            src->zed.setCameraSettings(sl::VIDEO_SETTINGS::GAIN, src->gain);
-            GST_INFO(" Runtime EXPOSURE %d - GAIN %d", src->exposure, src->gain);
-            src->exposure_gain_updated = FALSE;
-        } else {
-            // Auto exposure control
-            if (src->aec_agc_roi_x != -1 && src->aec_agc_roi_y &&
-                src->aec_agc_roi_w != -1 && src->aec_agc_roi_h != -1) {
-                sl::Rect roi;
-                roi.x=src->aec_agc_roi_x;
-                roi.y=src->aec_agc_roi_y;
-                roi.width=src->aec_agc_roi_w;
-                roi.height=src->aec_agc_roi_h;
-                sl::SIDE side = static_cast<sl::SIDE>(src->aec_agc_roi_side);
-                GST_INFO(" Runtime AEC_AGC_ROI: (%d,%d)-%dx%d - Side: %d",
-                        src->aec_agc_roi_x, src->aec_agc_roi_y,
-                        src->aec_agc_roi_w, src->aec_agc_roi_h, src->aec_agc_roi_side);
-                src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC, src->aec_agc);
-                src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC_ROI, roi, side);
-                src->exposure_gain_updated = FALSE;
-            }
-        }
-    }
+    // if (src->exposure_gain_updated) {
+    //     GST_INFO("Exposure gain updated");
+    //     if (src->aec_agc == FALSE) {
+    //         // Manual exposure control
+    //         src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC, src->aec_agc);
+    //         src->zed.setCameraSettings(sl::VIDEO_SETTINGS::EXPOSURE, src->exposure);
+    //         src->zed.setCameraSettings(sl::VIDEO_SETTINGS::GAIN, src->gain);
+    //         GST_INFO(" Runtime EXPOSURE %d - GAIN %d", src->exposure, src->gain);
+    //         src->exposure_gain_updated = FALSE;
+    //     } else {
+    //         // Auto exposure control
+    //         if (src->aec_agc_roi_x != -1 && src->aec_agc_roi_y &&
+    //             src->aec_agc_roi_w != -1 && src->aec_agc_roi_h != -1) {
+    //             sl::Rect roi;
+    //             roi.x=src->aec_agc_roi_x;
+    //             roi.y=src->aec_agc_roi_y;
+    //             roi.width=src->aec_agc_roi_w;
+    //             roi.height=src->aec_agc_roi_h;
+    //             sl::SIDE side = static_cast<sl::SIDE>(src->aec_agc_roi_side);
+    //             GST_INFO(" Runtime AEC_AGC_ROI: (%d,%d)-%dx%d - Side: %d",
+    //                     src->aec_agc_roi_x, src->aec_agc_roi_y,
+    //                     src->aec_agc_roi_w, src->aec_agc_roi_h, src->aec_agc_roi_side);
+    //             src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC, src->aec_agc);
+    //             src->zed.setCameraSettings(sl::VIDEO_SETTINGS::AEC_AGC_ROI, roi, side);
+    //             src->exposure_gain_updated = FALSE;
+    //         }
+    //     }
+    // }
     // <---- Set runtime parameters
 
     CUcontext zctx = src->zed.getCUDAContext();
@@ -2775,7 +2775,7 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     cuCtxPushCurrent_v2(zctx);
 
     // ----> ZED grab
-    ret = src->zed.grab(zedRtParams);
+    ret = src->zed.grab();
 
     if (ret > sl::ERROR_CODE::SUCCESS) {
         GST_ELEMENT_ERROR(src, RESOURCE, FAILED,
@@ -2868,12 +2868,6 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
             dst += row_bytes; // Advance dst by the size of the depth row we just wrote
         }
     } else {
-        GST_WARNING("Stream Type: %d", src->stream_type);
-        GST_WARNING("GStreamer Buffer Size: %d", minfo.size);
-        GST_WARNING("ZED Image Width: %d, Height: %d", left_img.getWidth(), left_img.getHeight());
-        if (left_img.getWidth() * left_img.getHeight() * 4 != minfo.size) {
-            GST_ERROR("SIZE MISMATCH! Potential Crash ahead.");
-        }
         memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
     }
     cuCtxPopCurrent_v2(NULL);
