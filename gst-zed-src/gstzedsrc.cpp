@@ -23,7 +23,6 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
-#include "gst-zed-meta/gstzedmeta.h"
 #include "gstzedsrc.h"
 
 GST_DEBUG_CATEGORY_STATIC(gst_zedsrc_debug);

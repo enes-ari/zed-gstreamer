@@ -62,8 +62,6 @@ SET(ZED_LIBS
     ${CUDA_NPP_LIBRARIES_ZED}
 )
 
-add_dependencies (${libname} gstzedmeta)
-
 target_link_libraries (
   ${libname} LINK_PUBLIC
   ${GLIB2_LIBRARIES}
