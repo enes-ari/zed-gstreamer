@@ -2839,9 +2839,6 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     // ----> Memory copy
     if (src->stream_type == GST_ZEDSRC_DEPTH_16) {
         memcpy(minfo.data, depth_data.getPtr<sl::ushort1>(), minfo.size);
-    } else if (src->stream_type == GST_ZEDSRC_LEFT_RIGHT) {
-        // Side-by-Side RGB data
-        memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
     } else if (src->stream_type == GST_ZEDSRC_LEFT_DEPTH) {
          // Manual Side-by-Side: Left RGB + Depth (Float->UInt32)
 
@@ -2870,6 +2867,12 @@ static GstFlowReturn gst_zedsrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
             dst += row_bytes; // Advance dst by the size of the depth row we just wrote
         }
     } else {
+        GST_WARNING("Stream Type: %d", src->stream_type);
+        GST_WARNING("GStreamer Buffer Size: %d", minfo.size);
+        GST_WARNING("ZED Image Width: %d, Height: %d", left_img.getWidth(), left_img.getHeight());
+        if (left_img.getWidth() * left_img.getHeight() * 4 != minfo.size) {
+            GST_ERROR("SIZE MISMATCH! Potential Crash ahead.");
+        }
         memcpy(minfo.data, left_img.getPtr<sl::uchar4>(), minfo.size);
     }
     cuCtxPopCurrent_v2(NULL);
