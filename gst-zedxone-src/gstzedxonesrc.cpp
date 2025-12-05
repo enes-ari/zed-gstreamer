@@ -1187,60 +1187,6 @@ static GstFlowReturn gst_zedxonesrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     GST_TRACE("Memory copy");
     memcpy(minfo.data, img.getPtr<sl::uchar4>(), minfo.size);
 
-    // ----> Info metadata
-    GST_TRACE("Info metadata");
-    sl::CameraOneInformation cam_info = src->_zed->getCameraInformation();
-    ZedInfo info;
-    info.cam_model = (gint) cam_info.camera_model;
-    info.stream_type = 0; // "Only left image"
-    info.grab_single_frame_width = cam_info.camera_configuration.resolution.width;
-    info.grab_single_frame_height = cam_info.camera_configuration.resolution.height;
-    // <---- Info metadata
-
-    // ----> Sensors metadata
-    GST_TRACE("Sensors metadata");
-    ZedSensors sens;
-
-    sens.sens_avail = TRUE;
-    sl::SensorsData sens_data;
-    src->_zed->getSensorsData(sens_data, sl::TIME_REFERENCE::IMAGE);
-
-    // IMU
-    GST_TRACE("IMU");
-    sens.imu.imu_avail = TRUE;
-    sens.imu.acc[0] = sens_data.imu.linear_acceleration.x;
-    sens.imu.acc[1] = sens_data.imu.linear_acceleration.y;
-    sens.imu.acc[2] = sens_data.imu.linear_acceleration.z;
-    sens.imu.gyro[0] = sens_data.imu.angular_velocity.x;
-    sens.imu.gyro[1] = sens_data.imu.angular_velocity.y;
-    sens.imu.gyro[2] = sens_data.imu.angular_velocity.z;
-
-    // TEMPERATURE
-    GST_TRACE("TEMPERATURE");
-    sens.temp.temp_avail = TRUE;
-    float temp;
-    sens_data.temperature.get(
-    sl::SensorsData::TemperatureData::SENSOR_LOCATION::IMU, temp);
-    sens.temp.temp_cam_left = temp;
-    sens.temp.temp_cam_right = temp;
-
-    sens.mag.mag_avail = FALSE;
-    sens.env.env_avail = FALSE;
-    // <---- Sensors metadata metadata
-
-    // ----> Positional Tracking metadata
-    GST_TRACE("Positional Tracking metadata");
-    ZedPose pose;
-    pose.pose_avail = FALSE;
-    pose.pos_tracking_state = static_cast<int>(sl::POSITIONAL_TRACKING_STATE::OFF);
-    pose.pos[0] = 0.0;
-    pose.pos[1] = 0.0;
-    pose.pos[2] = 0.0;
-    pose.orient[0] = 0.0;
-    pose.orient[1] = 0.0;
-    pose.orient[2] = 0.0;
-    // <---- Positional Tracking metadata
-
     // ----> Timestamp meta-data
     GST_TRACE("Timestamp meta-data");
     GST_BUFFER_TIMESTAMP(buf) =
@@ -1248,12 +1194,6 @@ static GstFlowReturn gst_zedxonesrc_fill(GstPushSrc *psrc, GstBuffer *buf) {
     GST_BUFFER_DTS(buf) = GST_BUFFER_TIMESTAMP(buf);
     GST_BUFFER_OFFSET(buf) = temp_ugly_buf_index++;
     // <---- Timestamp meta-data
-
-    GST_TRACE("PUSH Buffer meta-data");
-    guint64 offset = GST_BUFFER_OFFSET(buf);
-    GstZedSrcMeta *meta = gst_buffer_add_zed_src_meta(buf, info, pose, sens,
-                                                      false,
-                                                      0, NULL, offset);
 
     // Buffer release
     GST_TRACE("Buffer release");
