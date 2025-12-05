@@ -76,20 +76,6 @@ struct _GstZedSrc {
     gint measure3D_reference_frame;
     gboolean fill_mode;
 
-    gboolean body_tracking;
-    gboolean bt_enable_segm_output;   // bool enable_segmentation
-    gint bt_model;                    // sl::BODY_TRACKING_MODEL detection_model
-    gint bt_format;                   // sl::BODY_FORMAT body_format
-    gboolean bt_reduce_precision;     // bool allow_reduced_precision_inference
-    gfloat bt_max_range;              // float max_range
-    gint bt_kp_sel;                   // sl::BODY_KEYPOINTS_SELECTION body_selection
-    gboolean bt_fitting;              // bool enable_body_fitting
-    gboolean bt_enable_trk;           // bool enable_tracking
-    gfloat bt_pred_timeout;           // float prediction_timeout_s
-    gfloat bt_rt_det_conf;            // [runtime] float detection_confidence_threshold
-    gint bt_rt_min_kp_thresh;         // [runtime] int minimum_keypoints_threshold
-    gfloat bt_rt_skel_smoothing;      // [runtime] float skeleton_smoothing
-
     gint brightness;
     gint contrast;
     gint hue;

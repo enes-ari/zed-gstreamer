@@ -26,9 +26,6 @@
 #include "gst-zed-meta/gstzedmeta.h"
 #include "gstzedsrc.h"
 
-// AI Module
-#define BT_INSTANCE_MODULE_ID 0
-
 GST_DEBUG_CATEGORY_STATIC(gst_zedsrc_debug);
 #define GST_CAT_DEFAULT gst_zedsrc_debug
 
@@ -78,20 +75,6 @@ enum {
     PROP_3D_REF_FRAME,
     PROP_FILL_MODE,
     PROP_COORD_SYS,
-    PROP_BT_ENABLE,
-    PROP_BT_SEGM,
-    PROP_BT_SYNC,
-    PROP_BT_MODEL,
-    PROP_BT_FORMAT,
-    PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE,
-    PROP_BT_MAX_RANGE,
-    PROP_BT_KP_SELECT,
-    PROP_BT_BODY_FITTING,
-    PROP_BT_TRACKING,
-    PROP_BT_PREDICTION_TIMEOUT_S,
-    PROP_BT_CONFIDENCE,
-    PROP_BT_MIN_KP_THRESH,
-    PROP_BT_SMOOTHING,
     PROP_BRIGHTNESS,
     PROP_CONTRAST,
     PROP_HUE,
@@ -156,20 +139,6 @@ typedef enum {
 } GstZedSrcCoordSys;
 
 typedef enum {
-    GST_ZEDSRC_BT_HUMAN_BODY_FAST = 0,
-    GST_ZEDSRC_BT_HUMAN_BODY_MEDIUM = 1,
-    GST_ZEDSRC_BT_HUMAN_BODY_ACCURATE = 2
-} GstZedSrcBtModel;
-
-typedef enum {
-    GST_ZEDSRC_BT_BODY_18 = 0,
-    GST_ZEDSRC_BT_BODY_34 = 1,
-    GST_ZEDSRC_BT_BODY_38 = 2
-} GstZedSrcBtFormat;
-
-typedef enum { GST_ZEDSRC_BT_KP_FULL = 0, GST_ZEDSRC_BT_KP_UPPER_BODY = 1 } GstZedSrcBtKpSelect;
-
-typedef enum {
     GST_ZEDSRC_SIDE_LEFT = 0,
     GST_ZEDSRC_SIDE_RIGHT = 1,
     GST_ZEDSRC_SIDE_BOTH = 2
@@ -208,22 +177,6 @@ typedef enum {
 #define DEFAULT_PROP_TEXTURE_CONF_THRESH 100
 #define DEFAULT_PROP_3D_REF_FRAME        static_cast<gint>(sl::REFERENCE_FRAME::WORLD)
 #define DEFAULT_PROP_FILL_MODE           FALSE
-
-// BODY TRACKING
-#define DEFAULT_PROP_BT_ENABLE                            FALSE
-#define DEFAULT_PROP_BT_SEGM                              FALSE   // NOTE(Walter) for the future
-#define DEFAULT_PROP_BT_SYNC                              TRUE
-#define DEFAULT_PROP_BT_MODEL                             GST_ZEDSRC_BT_HUMAN_BODY_MEDIUM
-#define DEFAULT_PROP_BT_FORMAT                            GST_ZEDSRC_BT_BODY_34
-#define DEFAULT_PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE FALSE
-#define DEFAULT_PROP_BT_MAX_RANGE                         DEFAULT_PROP_DEPTH_MAX
-#define DEFAULT_PROP_BT_KP_SELECT                         GST_ZEDSRC_BT_KP_FULL
-#define DEFAULT_PROP_BT_BODY_FITTING                      TRUE
-#define DEFAULT_PROP_BT_TRACKING                          TRUE
-#define DEFAULT_PROP_BT_PREDICTION_TIMEOUT_S              0.2
-#define DEFAULT_PROP_BT_CONFIDENCE                        20.0
-#define DEFAULT_PROP_BT_MIN_KP_THRESH                     5
-#define DEFAULT_PROP_BT_SMOOTHING                         0.0
 
 // CAMERA CONTROLS
 #define DEFAULT_PROP_BRIGHTNESS        4
@@ -380,73 +333,6 @@ static GType gst_zedsrc_coord_sys_get_type(void) {
     }
 
     return zedsrc_coord_sys_type;
-}
-
-#define GST_TYPE_ZED_BT_MODEL_TYPE (gst_zedsrc_bt_model_get_type())
-static GType gst_zedsrc_bt_model_get_type(void) {
-    static GType zedsrc_bt_model_type = 0;
-
-    if (!zedsrc_bt_model_type) {
-        static GEnumValue pattern_types[] = {
-            {GST_ZEDSRC_BT_HUMAN_BODY_FAST,
-             "Keypoints based, specific to human skeleton, real time performance even on Jetson or "
-             "low end GPU cards",
-             "Body Tracking FAST"},
-            {GST_ZEDSRC_BT_HUMAN_BODY_MEDIUM,
-             "Keypoints based, specific to human skeleton, compromise between accuracy and speed",
-             "Body Tracking MEDIUM"},
-            {GST_ZEDSRC_BT_HUMAN_BODY_ACCURATE,
-             "Keypoints based, specific to human skeleton, state of the art accuracy, requires "
-             "powerful GPU",
-             "Body Tracking ACCURATE"},
-            {0, NULL, NULL},
-        };
-
-        zedsrc_bt_model_type = g_enum_register_static("GstZedSrcBtModel", pattern_types);
-    }
-
-    return zedsrc_bt_model_type;
-}
-
-#define GST_TYPE_ZED_BT_FORMAT_TYPE (gst_zedsrc_bt_format_get_type())
-static GType gst_zedsrc_bt_format_get_type(void) {
-    static GType zedsrc_bt_format_type = 0;
-
-    if (!zedsrc_bt_format_type) {
-        static GEnumValue pattern_types[] = {
-            {GST_ZEDSRC_BT_BODY_18, "18 keypoints format. Basic Body format", "Body 18 Key Points"},
-            {GST_ZEDSRC_BT_BODY_34,
-             "34 keypoints format. Body format, requires body fitting enabled",
-             "Body 34 Key Points"},
-            {GST_ZEDSRC_BT_BODY_38,
-             "38 keypoints format. Body format, including feet simplified face and hands",
-             "Body 38 Key Points"},
-            {0, NULL, NULL},
-        };
-
-        zedsrc_bt_format_type = g_enum_register_static("GstZedSrcBtFormat", pattern_types);
-    }
-
-    return zedsrc_bt_format_type;
-}
-
-#define GST_TYPE_ZED_BT_KP_SELECT_TYPE (gst_zedsrc_bt_kp_select_get_type())
-static GType gst_zedsrc_bt_kp_select_get_type(void) {
-    static GType zedsrc_bt_kp_select_type = 0;
-
-    if (!zedsrc_bt_kp_select_type) {
-        static GEnumValue pattern_types[] = {
-            {GST_ZEDSRC_BT_KP_FULL, "Full keypoint model.", "Full keypoint model."},
-            {GST_ZEDSRC_BT_KP_UPPER_BODY,
-             "Upper body keypoint model. Only the upper body will be outputted (from hip)",
-             "Upper body keypoint model"},
-            {0, NULL, NULL},
-        };
-
-        zedsrc_bt_kp_select_type = g_enum_register_static("GstZedSrcBtKpSelect", pattern_types);
-    }
-
-    return zedsrc_bt_kp_select_type;
 }
 
 #define GST_TYPE_ZED_DEPTH_MODE (gst_zedsrc_depth_mode_get_type())
@@ -821,86 +707,6 @@ static void gst_zedsrc_class_init(GstZedSrcClass *klass) {
                              (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 
     g_object_class_install_property(
-        gobject_class, PROP_BT_ENABLE,
-        g_param_spec_boolean("bt-enabled", "Body Tracking enable",
-                             "Set to TRUE to enable Body Tracking", DEFAULT_PROP_BT_ENABLE,
-                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    // Not yet supported
-    // g_object_class_install_property(
-    //     gobject_class, DEFAULT_PROP_BT_SEGM,
-    //     g_param_spec_boolean(
-    //         "bt-segm", "BT Segmentation Mask output",
-    //         "Set to TRUE to enable segmentation mask output for the detected bodies",
-    //         DEFAULT_PROP_BT_SEGM, (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_MODEL,
-        g_param_spec_enum("bt-detection-model", "Body Tracking model", "Body Tracking Model",
-                          GST_TYPE_ZED_BT_MODEL_TYPE, DEFAULT_PROP_BT_MODEL,
-                          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_FORMAT,
-        g_param_spec_enum("bt-format", "Body Tracking format", "Body Tracking format",
-                          GST_TYPE_ZED_BT_FORMAT_TYPE, DEFAULT_PROP_BT_FORMAT,
-                          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE,
-        g_param_spec_boolean("bt-allow-red-prec", "Body Tracking reduced inference precision",
-                             "Set to TRUE to enable Body Tracking reduced inference precision ",
-                             DEFAULT_PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE,
-                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_MAX_RANGE,
-        g_param_spec_float("bt-max-range", "Defines the maximum Body Tracking range",
-                           "Maximum Detection Range", -1.0f, 20000.0f, DEFAULT_PROP_BT_MAX_RANGE,
-                           (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_BODY_FITTING,
-        g_param_spec_boolean("bt-body-fitting", "Body Tracking model fitting",
-                             "Set to TRUE to enable Body Tracking model fitting ",
-                             DEFAULT_PROP_BT_BODY_FITTING,
-                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_TRACKING,
-        g_param_spec_boolean("bt-body-tracking", "Body Tracking model tracking",
-                             "Set to TRUE to enable body tracking across images flow ",
-                             DEFAULT_PROP_BT_TRACKING,
-                             (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_PREDICTION_TIMEOUT_S,
-        g_param_spec_float("bt-prediction-timeout-s", "Body Tracking prediction timeout(sec) ",
-                           "Body Tracking prediction timeout (sec)", 0.0f, 1.0f,
-                           DEFAULT_PROP_BT_PREDICTION_TIMEOUT_S,
-                           (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_CONFIDENCE,
-        g_param_spec_float("bt-confidence", "Minimum Body tracking detection confidence threshold",
-                           "Minimum Detection Confidence", 0.0f, 100.0f, DEFAULT_PROP_BT_CONFIDENCE,
-                           (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_MIN_KP_THRESH,
-        g_param_spec_int("bt-min-keypoints", "Minimum keypoints threshold.",
-                         "Specify the Minimum keypoints threshold.", 0, 70,
-                         DEFAULT_PROP_BT_MIN_KP_THRESH,
-                         (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
-        gobject_class, PROP_BT_SMOOTHING,
-        g_param_spec_float("bt-smoothing", "Body tracking smoothing of the fitted fused skeletond",
-                           "Smoothing of the fitted fused skeleton", 0.0f, 1.0f,
-                           DEFAULT_PROP_BT_SMOOTHING,
-                           (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-
-    g_object_class_install_property(
         gobject_class, PROP_BRIGHTNESS,
         g_param_spec_int("ctrl-brightness", "Camera control: brightness", "Image brightness", 0, 8,
                          DEFAULT_PROP_BRIGHTNESS,
@@ -1057,20 +863,6 @@ static void gst_zedsrc_init(GstZedSrc *src) {
     src->roi_w = DEFAULT_PROP_ROI_W;
     src->roi_h = DEFAULT_PROP_ROI_H;
 
-    src->body_tracking = DEFAULT_PROP_BT_ENABLE;
-    src->bt_enable_segm_output = DEFAULT_PROP_BT_SEGM;
-    src->bt_model = DEFAULT_PROP_BT_MODEL;
-    src->bt_format = DEFAULT_PROP_BT_FORMAT;
-    src->bt_reduce_precision = DEFAULT_PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE;
-    src->bt_max_range = DEFAULT_PROP_BT_MAX_RANGE;
-    src->bt_kp_sel = DEFAULT_PROP_BT_KP_SELECT;
-    src->bt_fitting = DEFAULT_PROP_BT_BODY_FITTING;
-    src->bt_enable_trk = DEFAULT_PROP_BT_TRACKING;
-    src->bt_pred_timeout = DEFAULT_PROP_BT_PREDICTION_TIMEOUT_S;
-    src->bt_rt_det_conf = DEFAULT_PROP_BT_CONFIDENCE;
-    src->bt_rt_min_kp_thresh = DEFAULT_PROP_BT_MIN_KP_THRESH;
-    src->bt_rt_skel_smoothing = DEFAULT_PROP_BT_SMOOTHING;
-
     src->brightness = DEFAULT_PROP_BRIGHTNESS;
     src->contrast = DEFAULT_PROP_CONTRAST;
     src->hue = DEFAULT_PROP_HUE;
@@ -1191,45 +983,6 @@ void gst_zedsrc_set_property(GObject *object, guint property_id, const GValue *v
         break;
     case PROP_ROI_H:
         src->roi_h = g_value_get_int(value);
-        break;
-    case PROP_BT_ENABLE:
-        src->body_tracking = g_value_get_boolean(value);
-        break;
-    case PROP_BT_SEGM:
-        src->bt_enable_segm_output = g_value_get_boolean(value);
-        break;
-    case PROP_BT_MODEL:
-        src->bt_model = g_value_get_enum(value);
-        break;
-    case PROP_BT_FORMAT:
-        src->bt_format = g_value_get_enum(value);
-        break;
-    case PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE:
-        src->bt_reduce_precision = g_value_get_boolean(value);
-        break;
-    case PROP_BT_MAX_RANGE:
-        src->bt_max_range = g_value_get_float(value);
-        break;
-    case PROP_BT_KP_SELECT:
-        src->bt_kp_sel = g_value_get_enum(value);
-        break;
-    case PROP_BT_BODY_FITTING:
-        src->bt_fitting = g_value_get_boolean(value);
-        break;
-    case PROP_BT_TRACKING:
-        src->bt_enable_trk = g_value_get_boolean(value);
-        break;
-    case PROP_BT_PREDICTION_TIMEOUT_S:
-        src->bt_pred_timeout = g_value_get_float(value);
-        break;
-    case PROP_BT_CONFIDENCE:
-        src->bt_rt_det_conf = g_value_get_float(value);
-        break;
-    case PROP_BT_MIN_KP_THRESH:
-        src->bt_rt_min_kp_thresh = g_value_get_int(value);
-        break;
-    case PROP_BT_SMOOTHING:
-        src->bt_rt_skel_smoothing = g_value_get_float(value);
         break;
     case PROP_BRIGHTNESS:
         src->brightness = g_value_get_int(value);
@@ -1391,45 +1144,6 @@ void gst_zedsrc_get_property(GObject *object, guint property_id, GValue *value, 
         break;
     case PROP_ROI_H:
         g_value_set_int(value, src->roi_h);
-        break;
-    case PROP_BT_ENABLE:
-        g_value_set_boolean(value, src->body_tracking);
-        break;
-    /*case PROP_BT_SEGM:
-    g_value_set_float(value, src->bt_enable_segm_output);
-    break;*/
-    case PROP_BT_MODEL:
-        g_value_set_enum(value, src->bt_model);
-        break;
-    case PROP_BT_FORMAT:
-        g_value_set_enum(value, src->bt_format);
-        break;
-    case PROP_BT_ALLOW_REDUCED_PRECISION_INFERENCE:
-        g_value_set_boolean(value, src->bt_reduce_precision);
-        break;
-    case PROP_BT_MAX_RANGE:
-        g_value_set_float(value, src->bt_max_range);
-        break;
-    case PROP_BT_KP_SELECT:
-        g_value_set_float(value, src->bt_kp_sel);
-        break;
-    case PROP_BT_BODY_FITTING:
-        g_value_set_boolean(value, src->bt_fitting);
-        break;
-    case PROP_BT_TRACKING:
-        g_value_set_boolean(value, src->bt_enable_trk);
-        break;
-    case PROP_BT_PREDICTION_TIMEOUT_S:
-        g_value_set_float(value, src->bt_pred_timeout);
-        break;
-    case PROP_BT_CONFIDENCE:
-        g_value_set_float(value, src->bt_rt_det_conf);
-        break;
-    case PROP_BT_MIN_KP_THRESH:
-        g_value_set_int(value, src->bt_rt_min_kp_thresh);
-        break;
-    case PROP_BT_SMOOTHING:
-        g_value_set_float(value, src->bt_rt_skel_smoothing);
         break;
     case PROP_BRIGHTNESS:
         g_value_set_int(value, src->brightness);
@@ -1621,14 +1335,6 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
              sl::toString(static_cast<sl::FLIP_MODE>(init_params.camera_image_flip)).c_str());
 
     init_params.depth_mode = static_cast<sl::DEPTH_MODE>(src->depth_mode);
-    if (src->body_tracking &&
-        init_params.depth_mode == sl::DEPTH_MODE::NONE) {
-        init_params.depth_mode = sl::DEPTH_MODE::NEURAL;
-        src->depth_mode = static_cast<gint>(init_params.depth_mode);
-
-        GST_WARNING_OBJECT(
-            src, "Body tracking requires DEPTH_MODE!=NONE. Depth mode value forced to NEURAL");
-    }
     if ((src->stream_type == GST_ZEDSRC_LEFT_DEPTH || src->stream_type == GST_ZEDSRC_DEPTH_16) &&
         init_params.depth_mode == sl::DEPTH_MODE::NONE) {
         init_params.depth_mode = sl::DEPTH_MODE::NEURAL;
@@ -1799,49 +1505,6 @@ static gboolean gst_zedsrc_start(GstBaseSrc *bsrc) {
         }
     }
     // <---- Runtime parameters
-
-    // ----> Body Tracking
-    GST_INFO("BODY TRACKING PARAMETERS");
-    GST_INFO(" * Body Tracking status: %s", (src->body_tracking ? "ON" : "OFF"));
-    if (src->body_tracking) {
-        sl::BodyTrackingParameters bt_params;
-        bt_params.instance_module_id = BT_INSTANCE_MODULE_ID;
-        bt_params.detection_model = static_cast<sl::BODY_TRACKING_MODEL>(src->bt_model);
-        GST_INFO(" * Body Tracking model: %s", sl::toString(bt_params.detection_model).c_str());
-        bt_params.body_format = static_cast<sl::BODY_FORMAT>(src->bt_format);
-        GST_INFO(" * Body Format: %s", sl::toString(bt_params.body_format).c_str());
-        bt_params.allow_reduced_precision_inference = src->bt_reduce_precision;
-        GST_INFO(" * Allow reduced precision inference: %s",
-                 (bt_params.allow_reduced_precision_inference ? "TRUE" : "FALSE"));
-        bt_params.body_selection = static_cast<sl::BODY_KEYPOINTS_SELECTION>(src->bt_kp_sel);
-        GST_INFO(" * Body KP Selection: %s", sl::toString(bt_params.body_selection).c_str());
-        bt_params.enable_body_fitting = src->bt_fitting;
-        GST_INFO(" * Body Fitting: %s", (bt_params.enable_body_fitting ? "TRUE" : "FALSE"));
-        bt_params.enable_segmentation = src->bt_enable_segm_output;
-        GST_INFO(" * Body Segmentation: %s", (bt_params.enable_segmentation ? "TRUE" : "FALSE"));
-        bt_params.enable_tracking = src->bt_enable_trk;
-        GST_INFO(" * Tracking: %s", (bt_params.enable_tracking ? "TRUE" : "FALSE"));
-        bt_params.max_range = src->bt_max_range;
-        GST_INFO(" * Max Range: %g mm", bt_params.max_range);
-        bt_params.prediction_timeout_s = src->bt_pred_timeout;
-        GST_INFO(" * Prediction timeout: %g sec", bt_params.prediction_timeout_s);
-
-        GST_INFO(" * Det. Confidence: %g", src->bt_rt_det_conf);
-        GST_INFO(" * Min. KP selection: %d", src->bt_rt_min_kp_thresh);
-        GST_INFO(" * Skeleton Smoothing: %g", src->bt_rt_skel_smoothing);
-
-        ret = src->zed.enableBodyTracking(bt_params);
-        if (ret != sl::ERROR_CODE::SUCCESS) {
-            GST_ELEMENT_ERROR(src, RESOURCE, NOT_FOUND,
-                              ("Failed to start Body Tracking: '%s' - %s",
-                               sl::toString(ret).c_str(), sl::toVerbose(ret).c_str()),
-                              (NULL));
-            return FALSE;
-        } else {
-            GST_INFO("*** Body Tracking enabled ***");
-        }
-    }
-    // <---- Body Tracking
 
     if (!gst_zedsrc_calculate_caps(src)) {
         return FALSE;
